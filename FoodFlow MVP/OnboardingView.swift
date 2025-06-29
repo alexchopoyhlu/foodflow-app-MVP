@@ -99,8 +99,9 @@ struct OnboardingView: View {
                 cookingSkillLevel: selectedCookingSkillLevel
             )
             
-            let mealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
-            dataManager.currentMealPlan = mealPlan
+            MealPlanGenerator.shared.generateWeeklyMealPlan { _ in
+                // Optionally handle completion, e.g., update UI or state
+            }
             
             showingMealPlan = true
         }

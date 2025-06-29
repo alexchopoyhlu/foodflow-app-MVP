@@ -107,54 +107,6 @@ struct TodayView: View {
     }
 }
 
-struct GroceryListView: View {
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Grocery List")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.leading)
-                        
-                        Text("Ingredients for your meals")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.leading)
-                    }
-                    Spacer()
-                }
-                .padding(.top, 20)
-                .padding(.horizontal, 20)
-                
-                Spacer()
-                
-                // Placeholder content
-                VStack(spacing: 16) {
-                    Image(systemName: "checklist")
-                        .font(.system(size: 60))
-                        .foregroundColor(.green)
-                    
-                    Text("Shopping List")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("Your grocery list will be generated based on your meal plan")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                
-                Spacer()
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarHidden(true)
-        }
-    }
-}
-
 struct ChatView: View {
     var body: some View {
         NavigationStack {

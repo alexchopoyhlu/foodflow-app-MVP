@@ -33,9 +33,9 @@ struct SettingsView: View {
                     .foregroundColor(.blue)
                     
                     Button("Generate New Meal Plan") {
-                        let newMealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
-                        dataManager.currentMealPlan = newMealPlan
-                        dismiss()
+                        MealPlanGenerator.shared.generateWeeklyMealPlan { _ in
+                            dismiss()
+                        }
                     }
                     .foregroundColor(.green)
                     

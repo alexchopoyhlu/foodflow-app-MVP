@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct MealPlanView: View {
-    @StateObject private var dataManager = DataManager.shared
-    @State private var selectedMeal: Meal?
+    @ObservedObject private var generator = MealPlanGenerator.shared
+    @State private var selectedMeal: MealDBMeal?
     @State private var showingMealDetail = false
+    @State private var isLoading = false
     
     private let dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
@@ -13,32 +14,32 @@ struct MealPlanView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         // Header
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("This Week's Plan")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .multilineTextAlignment(.leading)
-                            
-                            Text("Based on your \(dataManager.userPreferences.dietaryPreference.displayName.lowercased()) preferences and \(dataManager.userPreferences.cookingSkillLevel.displayName.lowercased()) cooking skills")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.leading)
-                            
-                            // Week heading
-                            Text(getWeekHeading())
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.blue)
-                                .padding(.top, 4)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("This Week's Plan")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .multilineTextAlignment(.leading)
+                                // Week heading
+                                Text(getWeekHeading())
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.blue)
+                                    .padding(.top, 4)
+                            }
+                            Spacer()
                         }
                         .padding(.top, 20)
                         .padding(.horizontal, 20)
                         
                         // Meal Plan Grid
-                        if let mealPlan = dataManager.currentMealPlan {
+                        if generator.isLoading {
+                            ProgressView("Loading meals...")
+                                .padding(.top, 40)
+                        } else if !generator.weeklyMeals.isEmpty {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
-                                ForEach(mealPlan.meals) { meal in
-                                    MealCard(meal: meal) {
+                                ForEach(Array(generator.weeklyMeals.enumerated()), id: \.element.id) { index, meal in
+                                    MealCard(meal: meal, dayOfWeek: index + 1) {
                                         selectedMeal = meal
                                         showingMealDetail = true
                                     }
@@ -55,7 +56,7 @@ struct MealPlanView: View {
                                     .font(.title2)
                                     .fontWeight(.semibold)
                                 
-                                Text("Complete onboarding to get your personalized meal plan")
+                                Text("Tap below to generate your weekly meal plan")
                                     .font(.body)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
@@ -64,24 +65,21 @@ struct MealPlanView: View {
                         }
                         
                         // Regenerate Button
-                        if dataManager.currentMealPlan != nil {
-                            Button(action: {
-                                let newMealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
-                                dataManager.currentMealPlan = newMealPlan
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.clockwise")
-                                    Text("Generate New Meal Plan")
-                                }
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(12)
+                        Button(action: {
+                            generator.generateWeeklyMealPlan { _ in }
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Generate New Meal Plan")
                             }
-                            .padding(.bottom, 30)
+                            .font(.headline)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(12)
                         }
+                        .padding(.bottom, 30)
                     }
                 }
                 
@@ -96,11 +94,16 @@ struct MealPlanView: View {
             }
             .navigationDestination(isPresented: $showingMealDetail) {
                 if let meal = selectedMeal {
-                    MealDetailView(meal: meal)
+                    MealDetailView_MealDB(meal: meal)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
+            .onAppear {
+                if generator.weeklyMeals.isEmpty {
+                    generator.generateWeeklyMealPlan { _ in }
+                }
+            }
         }
     }
     
@@ -125,80 +128,72 @@ struct MealPlanView: View {
 }
 
 struct MealCard: View {
-    let meal: Meal
+    let meal: MealDBMeal
+    let dayOfWeek: Int
     let action: () -> Void
     
     private let dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(dayNames[meal.dayOfWeek - 1])
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        
-                        Text(meal.name)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                            .multilineTextAlignment(.leading)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock")
-                                .font(.caption)
-                            Text("\(meal.prepTime + meal.cookTime) min")
-                                .font(.caption)
-                        }
-                        .foregroundColor(.secondary)
-                        
-                        Text(meal.difficulty.displayName)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 2)
-                            .background(difficultyColor.opacity(0.2))
-                            .foregroundColor(difficultyColor)
-                            .cornerRadius(6)
+            HStack(alignment: .top, spacing: 12) {
+                // Meal image
+                AsyncImage(url: URL(string: meal.imageUrl)) { phase in
+                    if let image = phase.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 56, height: 56)
+                            .cornerRadius(10)
+                            .clipped()
+                    } else if phase.error != nil {
+                        Color.gray.frame(width: 56, height: 56).cornerRadius(10)
+                    } else {
+                        ProgressView().frame(width: 56, height: 56)
                     }
                 }
                 
-                // Description
-                Text(meal.description)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                
-                // Dietary Tags
-                if !meal.dietaryTags.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(meal.dietaryTags, id: \.self) { tag in
-                            Text(tag.displayName)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.green.opacity(0.2))
-                                .foregroundColor(.green)
-                                .cornerRadius(8)
-                        }
-                    }
-                }
-                
-                // Arrow indicator
-                HStack {
-                    Spacer()
-                    Image(systemName: "chevron.right")
+                VStack(alignment: .leading, spacing: 8) {
+                    // Header
+                    Text(dayNames[dayOfWeek - 1])
                         .font(.caption)
+                        .fontWeight(.medium)
                         .foregroundColor(.secondary)
+                    
+                    Text(meal.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    
+                    // Category/Area
+                    HStack(spacing: 8) {
+                        if let category = meal.category, !category.isEmpty {
+                            Text(category)
+                                .font(.caption2)
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        if let area = meal.area, !area.isEmpty {
+                            Text(area)
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                    }
                 }
+                Spacer()
+                // Arrow indicator
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             .padding(16)
             .background(Color(.systemBackground))
@@ -207,15 +202,115 @@ struct MealCard: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
+}
+
+// MARK: - Meal Detail View for API Meals
+struct MealDetailView_MealDB: View {
+    let meal: MealDBMeal
+    @Environment(\.dismiss) private var dismiss
     
-    private var difficultyColor: Color {
-        switch meal.difficulty {
-        case .easy:
-            return .green
-        case .intermediate:
-            return .orange
-        case .advanced:
-            return .red
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top, spacing: 16) {
+                        AsyncImage(url: URL(string: meal.imageUrl)) { phase in
+                            if let image = phase.image {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 80, height: 80)
+                                    .cornerRadius(16)
+                                    .clipped()
+                            } else if phase.error != nil {
+                                Color.gray.frame(width: 80, height: 80).cornerRadius(16)
+                            } else {
+                                ProgressView().frame(width: 80, height: 80)
+                            }
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(meal.name)
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .multilineTextAlignment(.leading)
+                            if let category = meal.category, !category.isEmpty {
+                                Text(category)
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                            if let area = meal.area, !area.isEmpty {
+                                Text(area)
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                
+                // Ingredients Section
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Image(systemName: "list.bullet")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                        Text("Ingredients")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(meal.ingredientList, id: \.self) { ingredient in
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.blue)
+                                    .padding(.top, 8)
+                                Text(ingredient)
+                                    .font(.body)
+                                    .multilineTextAlignment(.leading)
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                
+                // Instructions Section
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Image(systemName: "number")
+                            .font(.title2)
+                            .foregroundColor(.green)
+                        Text("Instructions")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                    }
+                    Text(meal.instructions)
+                        .font(.body)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Done") {
+                    dismiss()
+                }
+            }
         }
     }
 }
