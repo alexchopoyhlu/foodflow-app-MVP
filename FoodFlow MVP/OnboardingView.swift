@@ -161,7 +161,9 @@ struct DietaryPreferencesPage: View {
                         title: preference.displayName,
                         isSelected: selectedPreference == preference,
                         action: {
-                            selectedPreference = preference
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                selectedPreference = preference
+                            }
                         }
                     )
                 }
@@ -199,7 +201,9 @@ struct CookingSkillPage: View {
                         subtitle: skillLevel.description,
                         isSelected: selectedSkillLevel == skillLevel,
                         action: {
-                            selectedSkillLevel = skillLevel
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                selectedSkillLevel = skillLevel
+                            }
                         }
                     )
                 }
@@ -230,21 +234,7 @@ struct BudgetPage: View {
                     .multilineTextAlignment(.leading)
             }
             
-            VStack(spacing: 16) {
-                ForEach(BudgetOption.allCases, id: \.self) { budget in
-                    PreferenceCardWithEmoji(
-                        emoji: budget.emoji,
-                        title: budget.displayName,
-                        subtitle: budget.description,
-                        isSelected: selectedBudget == budget,
-                        action: {
-                            selectedBudget = budget
-                        }
-                    )
-                }
-            }
-            
-            // Budget Period Selector
+            // Budget Period Selector (moved above budget options)
             VStack(alignment: .leading, spacing: 16) {
                 Text("Budget Period")
                     .font(.headline)
@@ -253,7 +243,9 @@ struct BudgetPage: View {
                 HStack(spacing: 12) {
                     ForEach(BudgetPeriod.allCases, id: \.self) { period in
                         Button(action: {
-                            budgetPeriod = period
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                budgetPeriod = period
+                            }
                         }) {
                             Text(period.displayName)
                                 .font(.body)
@@ -263,9 +255,31 @@ struct BudgetPage: View {
                                 .padding(.vertical, 12)
                                 .background(budgetPeriod == period ? Color.blue : Color(.systemGray6))
                                 .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(budgetPeriod == period ? Color.blue : Color.clear, lineWidth: 2)
+                                )
+                                .scaleEffect(budgetPeriod == period ? 1.05 : 1.0)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: budgetPeriod)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
+                }
+            }
+            
+            VStack(spacing: 16) {
+                ForEach(BudgetOption.allCases, id: \.self) { budget in
+                    PreferenceCardWithEmoji(
+                        emoji: budget.emoji,
+                        title: budget.getDisplayTitle(for: budgetPeriod),
+                        subtitle: budget.description,
+                        isSelected: selectedBudget == budget,
+                        action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                selectedBudget = budget
+                            }
+                        }
+                    )
                 }
             }
             
@@ -327,6 +341,8 @@ struct PreferenceCardWithEmoji: View {
             HStack(spacing: 16) {
                 Text(emoji)
                     .font(.title)
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
@@ -340,6 +356,7 @@ struct PreferenceCardWithEmoji: View {
                             .font(.caption)
                             .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
                             .multilineTextAlignment(.leading)
+                            .lineLimit(1)
                     }
                 }
                 
@@ -349,12 +366,20 @@ struct PreferenceCardWithEmoji: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
                         .font(.title2)
+                        .scaleEffect(isSelected ? 1.0 : 0.8)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
                 }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(isSelected ? Color.blue : Color(.systemGray6))
             .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -370,6 +395,19 @@ enum BudgetOption: String, CaseIterable, Codable {
     
     var displayName: String {
         return rawValue
+    }
+    
+    func getDisplayTitle(for period: BudgetPeriod) -> String {
+        switch self {
+        case .low:
+            return period == .weekly ? "Low (£10-£20)" : "Low (£40-£80)"
+        case .medium:
+            return period == .weekly ? "Medium (£20-£40)" : "Medium (£80-£160)"
+        case .high:
+            return period == .weekly ? "High (£40-£70)" : "High (£160-£280)"
+        case .unlimited:
+            return "Unlimited (∞)"
+        }
     }
     
     var description: String {

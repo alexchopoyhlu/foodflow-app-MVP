@@ -50,7 +50,7 @@ enum CookingSkillLevel: String, CaseIterable, Codable {
     var description: String {
         switch self {
         case .easy:
-            return "Simple recipes with basic techniques"
+            return "Basic cooking techniques"
         case .intermediate:
             return "Some cooking experience required"
         case .advanced:
