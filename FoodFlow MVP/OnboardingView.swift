@@ -2,137 +2,409 @@ import SwiftUI
 
 struct OnboardingView: View {
     @StateObject private var dataManager = DataManager.shared
+    @State private var currentPage = 0
     @State private var selectedDietaryPreference: DietaryPreference = .none
     @State private var selectedCookingSkillLevel: CookingSkillLevel = .easy
+    @State private var selectedBudget: BudgetOption = .medium
+    @State private var budgetPeriod: BudgetPeriod = .weekly
     @State private var showingMealPlan = false
+    
+    private let totalPages = 5
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 30) {
-                // Header
+            VStack(spacing: 0) {
+                // Page Content
+                TabView(selection: $currentPage) {
+                    // Page 1: Welcome
+                    WelcomePage()
+                        .tag(0)
+                    
+                    // Page 2: Dietary Preferences
+                    DietaryPreferencesPage(selectedPreference: $selectedDietaryPreference)
+                        .tag(1)
+                    
+                    // Page 3: Cooking Skill Level
+                    CookingSkillPage(selectedSkillLevel: $selectedCookingSkillLevel)
+                        .tag(2)
+                    
+                    // Page 4: Budget
+                    BudgetPage(selectedBudget: $selectedBudget, budgetPeriod: $budgetPeriod)
+                        .tag(3)
+                    
+                    // Page 5: All Set
+                    AllSetPage()
+                        .tag(4)
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .animation(.easeInOut, value: currentPage)
+                
+                // Bottom Button Area
                 VStack(spacing: 16) {
-                    Image(systemName: "fork.knife.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.blue)
-                    
-                    Text("Welcome to FoodFlow")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Let's personalize your meal planning experience")
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, 40)
-                
-                Spacer()
-                
-                // Dietary Preferences Section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Dietary Preferences")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                        ForEach(DietaryPreference.allCases, id: \.self) { preference in
-                            PreferenceCard(
-                                title: preference.displayName,
-                                isSelected: selectedDietaryPreference == preference,
-                                action: {
-                                    selectedDietaryPreference = preference
-                                }
-                            )
+                    // Page Indicators
+                    HStack(spacing: 8) {
+                        ForEach(0..<totalPages, id: \.self) { page in
+                            Circle()
+                                .fill(page == currentPage ? Color.blue : Color.gray.opacity(0.3))
+                                .frame(width: 8, height: 8)
+                                .animation(.easeInOut, value: currentPage)
                         }
                     }
-                }
-                
-                // Cooking Skill Level Section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Cooking Skill Level")
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                    .padding(.top, 20)
                     
-                    VStack(spacing: 12) {
-                        ForEach(CookingSkillLevel.allCases, id: \.self) { skillLevel in
-                            PreferenceCard(
-                                title: skillLevel.displayName,
-                                isSelected: selectedCookingSkillLevel == skillLevel,
-                                action: {
-                                    selectedCookingSkillLevel = skillLevel
-                                }
-                            )
+                    // Action Button
+                    Button(action: handleButtonAction) {
+                        HStack {
+                            if currentPage == totalPages - 1 {
+                                Text("Generate Meal Plans")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                
+                                Image(systemName: "arrow.right")
+                                    .font(.headline)
+                            } else {
+                                Text("Continue")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                
+                                Image(systemName: "arrow.right")
+                                    .font(.headline)
+                            }
                         }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.blue)
+                        .cornerRadius(16)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 30)
                 }
-                
-                Spacer()
-                
-                // Generate Meal Plan Button
-                Button(action: {
-                    dataManager.userPreferences = UserPreferences(
-                        dietaryPreference: selectedDietaryPreference,
-                        cookingSkillLevel: selectedCookingSkillLevel
-                    )
-                    
-                    let mealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
-                    dataManager.currentMealPlan = mealPlan
-                    
-                    showingMealPlan = true
-                }) {
-                    HStack {
-                        Text("Generate My Meal Plan")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Image(systemName: "arrow.right")
-                            .font(.headline)
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.blue)
-                    .cornerRadius(16)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 30)
             }
-            .padding(.horizontal, 24)
             .navigationDestination(isPresented: $showingMealPlan) {
                 MealPlanView()
             }
         }
     }
+    
+    private func handleButtonAction() {
+        if currentPage < totalPages - 1 {
+            withAnimation {
+                currentPage += 1
+            }
+        } else {
+            // Generate meal plan and navigate
+            dataManager.userPreferences = UserPreferences(
+                dietaryPreference: selectedDietaryPreference,
+                cookingSkillLevel: selectedCookingSkillLevel
+            )
+            
+            let mealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
+            dataManager.currentMealPlan = mealPlan
+            
+            showingMealPlan = true
+        }
+    }
 }
 
-struct PreferenceCard: View {
+// MARK: - Page Views
+
+struct WelcomePage: View {
+    var body: some View {
+        VStack(spacing: 40) {
+            Spacer()
+            
+            VStack(spacing: 24) {
+                Image(systemName: "fork.knife.circle.fill")
+                    .font(.system(size: 120))
+                    .foregroundColor(.blue)
+                
+                VStack(spacing: 16) {
+                    Text("FoodFlow")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Your Personal Meal Planning Assistant")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+struct DietaryPreferencesPage: View {
+    @Binding var selectedPreference: DietaryPreference
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("What's your dietary preference?")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.leading)
+                
+                Text("We'll customize your meal plans based on your dietary needs")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            VStack(spacing: 16) {
+                ForEach(DietaryPreference.allCases, id: \.self) { preference in
+                    PreferenceCardWithEmoji(
+                        emoji: preference.emoji,
+                        title: preference.displayName,
+                        isSelected: selectedPreference == preference,
+                        action: {
+                            selectedPreference = preference
+                        }
+                    )
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 40)
+    }
+}
+
+struct CookingSkillPage: View {
+    @Binding var selectedSkillLevel: CookingSkillLevel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("What's your cooking skill level?")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.leading)
+                
+                Text("We'll adjust recipe complexity to match your experience")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            VStack(spacing: 16) {
+                ForEach(CookingSkillLevel.allCases, id: \.self) { skillLevel in
+                    PreferenceCardWithEmoji(
+                        emoji: skillLevel.emoji,
+                        title: skillLevel.displayName,
+                        subtitle: skillLevel.description,
+                        isSelected: selectedSkillLevel == skillLevel,
+                        action: {
+                            selectedSkillLevel = skillLevel
+                        }
+                    )
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 40)
+    }
+}
+
+struct BudgetPage: View {
+    @Binding var selectedBudget: BudgetOption
+    @Binding var budgetPeriod: BudgetPeriod
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("What's your budget?")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.leading)
+                
+                Text("We'll suggest meals that fit your budget")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            VStack(spacing: 16) {
+                ForEach(BudgetOption.allCases, id: \.self) { budget in
+                    PreferenceCardWithEmoji(
+                        emoji: budget.emoji,
+                        title: budget.displayName,
+                        subtitle: budget.description,
+                        isSelected: selectedBudget == budget,
+                        action: {
+                            selectedBudget = budget
+                        }
+                    )
+                }
+            }
+            
+            // Budget Period Selector
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Budget Period")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                HStack(spacing: 12) {
+                    ForEach(BudgetPeriod.allCases, id: \.self) { period in
+                        Button(action: {
+                            budgetPeriod = period
+                        }) {
+                            Text(period.displayName)
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(budgetPeriod == period ? .white : .primary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(budgetPeriod == period ? Color.blue : Color(.systemGray6))
+                                .cornerRadius(12)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 40)
+    }
+}
+
+struct AllSetPage: View {
+    var body: some View {
+        VStack(spacing: 40) {
+            Spacer()
+            
+            VStack(spacing: 24) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 120))
+                    .foregroundColor(.green)
+                
+                VStack(spacing: 16) {
+                    Text("You're All Set!")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("We're ready to create your personalized weekly meal plan")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+// MARK: - Supporting Views
+
+struct PreferenceCardWithEmoji: View {
+    let emoji: String
     let title: String
+    let subtitle: String?
     let isSelected: Bool
     let action: () -> Void
     
+    init(emoji: String, title: String, subtitle: String? = nil, isSelected: Bool, action: @escaping () -> Void) {
+        self.emoji = emoji
+        self.title = title
+        self.subtitle = subtitle
+        self.isSelected = isSelected
+        self.action = action
+    }
+    
     var body: some View {
         Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(isSelected ? .white : .primary)
+            HStack(spacing: 16) {
+                Text(emoji)
+                    .font(.title)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(isSelected ? .white : .primary)
+                        .multilineTextAlignment(.leading)
+                    
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
                 
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
-                        .font(.title3)
+                        .font(.title2)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .background(isSelected ? Color.blue : Color(.systemGray6))
-            .cornerRadius(12)
+            .cornerRadius(16)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Supporting Models
+
+enum BudgetOption: String, CaseIterable, Codable {
+    case low = "Low"
+    case medium = "Medium"
+    case high = "High"
+    case unlimited = "Unlimited"
+    
+    var displayName: String {
+        return rawValue
+    }
+    
+    var description: String {
+        switch self {
+        case .low:
+            return "Budget-friendly options"
+        case .medium:
+            return "Balanced quality and cost"
+        case .high:
+            return "Premium ingredients"
+        case .unlimited:
+            return "No budget constraints"
+        }
+    }
+    
+    var emoji: String {
+        switch self {
+        case .low:
+            return "💰"
+        case .medium:
+            return "💳"
+        case .high:
+            return "💎"
+        case .unlimited:
+            return "🏆"
+        }
+    }
+}
+
+enum BudgetPeriod: String, CaseIterable, Codable {
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+    
+    var displayName: String {
+        return rawValue
     }
 }
 

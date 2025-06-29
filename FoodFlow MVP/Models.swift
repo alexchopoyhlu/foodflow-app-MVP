@@ -21,6 +21,21 @@ enum DietaryPreference: String, CaseIterable, Codable {
     var displayName: String {
         return rawValue
     }
+    
+    var emoji: String {
+        switch self {
+        case .none:
+            return "🍽️"
+        case .vegetarian:
+            return "🥬"
+        case .vegan:
+            return "🌱"
+        case .keto:
+            return "🥑"
+        case .glutenFree:
+            return "🌾"
+        }
+    }
 }
 
 enum CookingSkillLevel: String, CaseIterable, Codable {
@@ -30,6 +45,28 @@ enum CookingSkillLevel: String, CaseIterable, Codable {
     
     var displayName: String {
         return rawValue
+    }
+    
+    var description: String {
+        switch self {
+        case .easy:
+            return "Simple recipes with basic techniques"
+        case .intermediate:
+            return "Some cooking experience required"
+        case .advanced:
+            return "Complex recipes for experienced cooks"
+        }
+    }
+    
+    var emoji: String {
+        switch self {
+        case .easy:
+            return "👶"
+        case .intermediate:
+            return "👨‍🍳"
+        case .advanced:
+            return "🧑‍🍳"
+        }
     }
 }
 
