@@ -62,19 +62,24 @@ struct MainTabView: View {
 struct TodayView: View {
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
+            VStack(spacing: 24) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Today")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Your daily meal plan")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Today")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text("Your daily meal plan")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer()
                 }
                 .padding(.top, 20)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 Spacer()
                 
@@ -105,19 +110,24 @@ struct TodayView: View {
 struct GroceryListView: View {
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
+            VStack(spacing: 24) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Grocery List")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Ingredients for your meals")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Grocery List")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text("Ingredients for your meals")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer()
                 }
                 .padding(.top, 20)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 Spacer()
                 
@@ -148,19 +158,24 @@ struct GroceryListView: View {
 struct ChatView: View {
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
+            VStack(spacing: 24) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("AI Nutritionist")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Chat with your personal nutritionist")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("AI Nutritionist")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text("Chat with your personal nutritionist")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer()
                 }
                 .padding(.top, 20)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 Spacer()
                 
@@ -194,19 +209,24 @@ struct ProfileView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
+            VStack(spacing: 24) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Profile")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Your account and preferences")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Profile")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text("Your account and preferences")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer()
                 }
                 .padding(.top, 20)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 Spacer()
                 
