@@ -9,78 +9,89 @@ struct MealPlanView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("This Week's Plan")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.leading)
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("This Week's Plan")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .multilineTextAlignment(.leading)
+                            
+                            Text("Based on your \(dataManager.userPreferences.dietaryPreference.displayName.lowercased()) preferences and \(dataManager.userPreferences.cookingSkillLevel.displayName.lowercased()) cooking skills")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                            
+                            // Week heading
+                            Text(getWeekHeading())
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.blue)
+                                .padding(.top, 4)
+                        }
+                        .padding(.top, 20)
+                        .padding(.horizontal, 20)
                         
-                        Text("Based on your \(dataManager.userPreferences.dietaryPreference.displayName.lowercased()) preferences and \(dataManager.userPreferences.cookingSkillLevel.displayName.lowercased()) cooking skills")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.leading)
-                        
-                        // Week heading
-                        Text(getWeekHeading())
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.blue)
-                            .padding(.top, 4)
-                    }
-                    .padding(.top, 20)
-                    .padding(.horizontal, 20)
-                    
-                    // Meal Plan Grid
-                    if let mealPlan = dataManager.currentMealPlan {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
-                            ForEach(mealPlan.meals) { meal in
-                                MealCard(meal: meal) {
-                                    selectedMeal = meal
-                                    showingMealDetail = true
+                        // Meal Plan Grid
+                        if let mealPlan = dataManager.currentMealPlan {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
+                                ForEach(mealPlan.meals) { meal in
+                                    MealCard(meal: meal) {
+                                        selectedMeal = meal
+                                        showingMealDetail = true
+                                    }
                                 }
                             }
-                        }
-                        .padding(.horizontal, 20)
-                    } else {
-                        VStack(spacing: 16) {
-                            Image(systemName: "fork.knife")
-                                .font(.system(size: 60))
-                                .foregroundColor(.secondary)
-                            
-                            Text("No meal plan generated yet")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            
-                            Text("Complete onboarding to get your personalized meal plan")
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.top, 60)
-                    }
-                    
-                    // Regenerate Button
-                    if dataManager.currentMealPlan != nil {
-                        Button(action: {
-                            let newMealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
-                            dataManager.currentMealPlan = newMealPlan
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Generate New Meal Plan")
+                            .padding(.horizontal, 20)
+                        } else {
+                            VStack(spacing: 16) {
+                                Image(systemName: "fork.knife")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("No meal plan generated yet")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("Complete onboarding to get your personalized meal plan")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
                             }
-                            .font(.headline)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(12)
+                            .padding(.top, 60)
                         }
-                        .padding(.bottom, 30)
+                        
+                        // Regenerate Button
+                        if dataManager.currentMealPlan != nil {
+                            Button(action: {
+                                let newMealPlan = MealPlanGenerator.shared.generateWeeklyMealPlan(for: dataManager.userPreferences)
+                                dataManager.currentMealPlan = newMealPlan
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.clockwise")
+                                    Text("Generate New Meal Plan")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(12)
+                            }
+                            .padding(.bottom, 30)
+                        }
                     }
+                }
+                
+                // Blur effect overlay at the bottom
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .frame(height: 0)
+                        .allowsHitTesting(false)
                 }
             }
             .navigationDestination(isPresented: $showingMealDetail) {
