@@ -5,12 +5,14 @@ struct TodayStatsView: View {
     var fatPercent: Double = 0.29
     var proPercent: Double = 0.65
     var carbPercent: Double = 0.85
+    var upcomingSectionSpacing: CGFloat = -90
+    var mealBarSpacing: CGFloat = 5
     
     var body: some View {
         VStack(spacing: 24) {
             ZStack {
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color(.label).opacity(0.15), lineWidth: 2)
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(.label).opacity(0.45), lineWidth: 2)
                     .background(RoundedRectangle(cornerRadius: 18).fill(Color(.systemBackground)))
                 VStack(alignment: .leading, spacing: 18) {
                     HStack {
@@ -50,10 +52,10 @@ struct TodayStatsView: View {
             .frame(height: 140)
             .padding(.horizontal, 8)
             
-            Spacer().frame(height: 4)
+            Spacer().frame(height: upcomingSectionSpacing)
             
             // Upcoming Meals Section
-            UpcomingMealsSection()
+            UpcomingMealsSection(mealBarSpacing: mealBarSpacing)
         }
     }
 }
@@ -101,8 +103,10 @@ struct UpcomingMealsSection: View {
         .dinner: MealState()
     ]
     
+    var mealBarSpacing: CGFloat = 20
+    
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: mealBarSpacing) {
             ForEach(MealType.allCases, id: \.self) { mealType in
                 MealBar(
                     mealType: mealType,
@@ -146,17 +150,19 @@ struct MealBar: View {
                     .font(.system(size: 18, weight: .bold))
                 Spacer()
                 Text(state.isCompleted ? "Completed" : "Upcoming")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(state.isCompleted ? Color.green : Color.orange)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
                     .background((state.isCompleted ? Color.green.opacity(0.15) : Color.orange.opacity(0.15)))
-                    .cornerRadius(16)
+                    .cornerRadius(12)
                 Button(action: onExpand) {
-                    Image(systemName: state.isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: "chevron.down")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
                         .padding(.leading, 8)
+                        .rotationEffect(.degrees(state.isExpanded ? 180 : 0))
+                        .animation(.easeInOut(duration: 0.25), value: state.isExpanded)
                 }
             }
             .padding(.horizontal, 18)
@@ -221,11 +227,11 @@ struct MealBar: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color(.label).opacity(0.25), lineWidth: 2)
-                .background(RoundedRectangle(cornerRadius: 18).fill(Color(.systemBackground)))
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.label).opacity(0.55), lineWidth: 3)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemBackground)))
         )
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.vertical, 2)
         .frame(maxWidth: .infinity)
     }
