@@ -82,7 +82,7 @@ struct OnboardingView: View {
                 }
             }
             .navigationDestination(isPresented: $showingMealPlan) {
-                MealPlanView()
+                MainTabView()
             }
         }
     }
