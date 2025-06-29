@@ -81,6 +81,9 @@ struct TodayView: View {
                 .padding(.top, 20)
                 .padding(.horizontal, 20)
                 
+                // Stats Rectangle
+                TodayStatsView()
+                
                 Spacer()
                 
                 // Placeholder content
