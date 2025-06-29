@@ -4,7 +4,6 @@ struct MealPlanView: View {
     @StateObject private var dataManager = DataManager.shared
     @State private var selectedMeal: Meal?
     @State private var showingMealDetail = false
-    @State private var showingSettings = false
     
     private let dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
@@ -13,18 +12,26 @@ struct MealPlanView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // Header
-                    VStack(spacing: 8) {
-                        Text("Your Weekly Meal Plan")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("This Week's Plan")
                             .font(.largeTitle)
                             .fontWeight(.bold)
-                            .multilineTextAlignment(.center)
+                            .multilineTextAlignment(.leading)
                         
                         Text("Based on your \(dataManager.userPreferences.dietaryPreference.displayName.lowercased()) preferences and \(dataManager.userPreferences.cookingSkillLevel.displayName.lowercased()) cooking skills")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                            .multilineTextAlignment(.leading)
+                        
+                        // Week heading
+                        Text(getWeekHeading())
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                            .padding(.top, 4)
                     }
                     .padding(.top, 20)
+                    .padding(.horizontal, 20)
                     
                     // Meal Plan Grid
                     if let mealPlan = dataManager.currentMealPlan {
@@ -81,18 +88,28 @@ struct MealPlanView: View {
                     MealDetailView(meal: meal)
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Settings") {
-                        showingSettings = true
-                    }
-                }
-            }
+            .navigationBarHidden(true)
         }
+    }
+    
+    private func getWeekHeading() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM"
+        
+        let today = Date()
+        let calendar = Calendar.current
+        
+        // Get the start of the current week (Monday)
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        
+        // Get the end of the current week (Sunday)
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? today
+        
+        let startString = formatter.string(from: weekStart)
+        let endString = formatter.string(from: weekEnd)
+        
+        return "\(startString) - \(endString)"
     }
 }
 

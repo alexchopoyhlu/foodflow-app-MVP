@@ -5,44 +5,55 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Today Tab
-            TodayView()
-                .tabItem {
-                    Image(systemName: "house.fill")
-                }
-                .tag(0)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // Today Tab
+                TodayView()
+                    .tabItem {
+                        Image(systemName: "house.fill")
+                    }
+                    .tag(0)
+                
+                // Meal Plan Tab
+                MealPlanView()
+                    .tabItem {
+                        Image(systemName: "fork.knife")
+                    }
+                    .tag(1)
+                
+                // Grocery List Tab
+                GroceryListView()
+                    .tabItem {
+                        Image(systemName: "checklist")
+                    }
+                    .tag(2)
+                
+                // Chat Tab
+                ChatView()
+                    .tabItem {
+                        Image(systemName: "message.fill")
+                    }
+                    .tag(3)
+                
+                // Profile Tab
+                ProfileView()
+                    .tabItem {
+                        Image(systemName: "person.fill")
+                    }
+                    .tag(4)
+            }
+            .accentColor(.blue)
+            .environmentObject(dataManager)
             
-            // Meal Plan Tab
-            MealPlanView()
-                .tabItem {
-                    Image(systemName: "fork.knife")
-                }
-                .tag(1)
-            
-            // Grocery List Tab
-            GroceryListView()
-                .tabItem {
-                    Image(systemName: "checklist")
-                }
-                .tag(2)
-            
-            // Chat Tab
-            ChatView()
-                .tabItem {
-                    Image(systemName: "message.fill")
-                }
-                .tag(3)
-            
-            // Profile Tab
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person.fill")
-                }
-                .tag(4)
+            // Blur effect overlay for tab bar
+            VStack {
+                Spacer()
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .frame(height: 0)
+                    .allowsHitTesting(false)
+            }
         }
-        .accentColor(.blue)
-        .environmentObject(dataManager)
     }
 }
 
@@ -53,7 +64,7 @@ struct TodayView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Header
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Today")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -63,6 +74,7 @@ struct TodayView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 20)
+                .padding(.horizontal, 24)
                 
                 Spacer()
                 
@@ -84,8 +96,8 @@ struct TodayView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 24)
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
         }
     }
 }
@@ -95,7 +107,7 @@ struct GroceryListView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Header
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Grocery List")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -105,6 +117,7 @@ struct GroceryListView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 20)
+                .padding(.horizontal, 24)
                 
                 Spacer()
                 
@@ -126,8 +139,8 @@ struct GroceryListView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 24)
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
         }
     }
 }
@@ -137,7 +150,7 @@ struct ChatView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Header
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("AI Nutritionist")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -147,6 +160,7 @@ struct ChatView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 20)
+                .padding(.horizontal, 24)
                 
                 Spacer()
                 
@@ -168,8 +182,8 @@ struct ChatView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 24)
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
         }
     }
 }
@@ -182,7 +196,7 @@ struct ProfileView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Header
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Profile")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -192,6 +206,7 @@ struct ProfileView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 20)
+                .padding(.horizontal, 24)
                 
                 Spacer()
                 
@@ -230,8 +245,8 @@ struct ProfileView: View {
                 }
                 .padding(.bottom, 30)
             }
-            .padding(.horizontal, 24)
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
