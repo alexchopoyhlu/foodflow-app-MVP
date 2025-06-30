@@ -3,44 +3,50 @@ import SwiftUI
 struct MainTabView: View {
     @StateObject private var dataManager = DataManager.shared
     @State private var selectedTab = 0
+    @State private var showingProfile = false
     
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
                 // Today Tab
-                TodayView()
+                TodayView(showingProfile: $showingProfile)
                     .tabItem {
-                        Image(systemName: "house.fill")
+                        VStack {
+                            Image(systemName: "house.fill")
+                            Text("Home")
+                        }
                     }
                     .tag(0)
                 
                 // Meal Plan Tab
-                MealPlanView()
+                MealPlanView(showingProfile: $showingProfile)
                     .tabItem {
-                        Image(systemName: "fork.knife")
+                        VStack {
+                            Image(systemName: "fork.knife")
+                            Text("Plan")
+                        }
                     }
                     .tag(1)
                 
                 // Grocery List Tab
-                GroceryListView()
+                GroceryListView(showingProfile: $showingProfile)
                     .tabItem {
-                        Image(systemName: "checklist")
+                        VStack {
+                            Image(systemName: "checklist")
+                            Text("List")
+                        }
                     }
                     .tag(2)
                 
                 // Chat Tab
-                ChatView()
+                ChatView(showingProfile: $showingProfile)
                     .tabItem {
-                        Image(systemName: "message.fill")
+                        VStack {
+                            Image(systemName: "message.fill")
+                            Text("Chat")
+                        }
                     }
                     .tag(3)
-                
-                // Profile Tab
-                ProfileView()
-                    .tabItem {
-                        Image(systemName: "person.fill")
-                    }
-                    .tag(4)
             }
             .accentColor(.blue)
             .environmentObject(dataManager)
@@ -54,52 +60,50 @@ struct MainTabView: View {
                     .allowsHitTesting(false)
             }
         }
+        .sheet(isPresented: $showingProfile) {
+            ProfileView()
+        }
     }
 }
 
 // MARK: - Tab Views
 
 struct TodayView: View {
+    @Binding var showingProfile: Bool
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
                 // Header
                 HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Today")
+                    VStack(alignment: .leading, spacing: -4) {
+                        Text("Enjoy your Monday,")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
                         
-                        Text("Your daily meal plan")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        Text("Alex")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
                     }
                     Spacer()
+                    // Profile Icon
+                    Button(action: { showingProfile = true }) {
+                        Image(systemName: "person.crop.circle")
+                            .resizable()
+                            .frame(width: 36, height: 36)
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.top, 20)
                 .padding(.horizontal, 20)
                 
-                Spacer()
-                
-                // Placeholder content
-                VStack(spacing: 16) {
-                    Image(systemName: "house.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.blue)
-                    
-                    Text("Today's Meals")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("Your daily meal recommendations will appear here")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+                // Stats Rectangle
+                TodayStatsView()
                 
                 Spacer()
+                
+                
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
@@ -108,6 +112,7 @@ struct TodayView: View {
 }
 
 struct ChatView: View {
+    @Binding var showingProfile: Bool
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -125,6 +130,13 @@ struct ChatView: View {
                             .multilineTextAlignment(.leading)
                     }
                     Spacer()
+                    // Profile Icon
+                    Button(action: { showingProfile = true }) {
+                        Image(systemName: "person.crop.circle")
+                            .resizable()
+                            .frame(width: 36, height: 36)
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.top, 20)
                 .padding(.horizontal, 20)
