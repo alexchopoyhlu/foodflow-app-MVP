@@ -9,6 +9,7 @@ struct MealPlanView: View {
     @State private var isLoading = false
     @State private var selectedView: ViewType = .list
     @State private var selectedDate: Date? = Calendar.current.startOfDay(for: Date())
+    @State private var favoriteMealIDs: Set<String> = []
     var calendarToMealSpacing: CGFloat = 16
     var profileTopSpacing: CGFloat = 20
     
@@ -83,7 +84,13 @@ struct MealPlanView: View {
                         } else if !generator.weeklyMeals.isEmpty {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
                                 ForEach(Array(generator.weeklyMeals.enumerated()), id: \.element.id) { index, meal in
-                                    MealCard(meal: meal, dayOfWeek: index + 1) {
+                                    MealCard(meal: meal, dayOfWeek: index + 1, isFavorite: favoriteMealIDs.contains(meal.id), toggleFavorite: {
+                                        if favoriteMealIDs.contains(meal.id) {
+                                            favoriteMealIDs.remove(meal.id)
+                                        } else {
+                                            favoriteMealIDs.insert(meal.id)
+                                        }
+                                    }) {
                                         selectedMeal = meal
                                         showingMealDetail = true
                                     }
@@ -204,77 +211,88 @@ struct MealPlanView: View {
 struct MealCard: View {
     let meal: MealDBMeal
     let dayOfWeek: Int
+    var isFavorite: Bool
+    var toggleFavorite: () -> Void
     let action: () -> Void
     
     private let dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
     var body: some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 12) {
-                // Meal image
-                AsyncImage(url: URL(string: meal.imageUrl)) { phase in
-                    if let image = phase.image {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 56, height: 56)
-                            .cornerRadius(10)
-                            .clipped()
-                    } else if phase.error != nil {
-                        Color.gray.frame(width: 56, height: 56).cornerRadius(10)
-                    } else {
-                        ProgressView().frame(width: 56, height: 56)
+        ZStack(alignment: .bottomTrailing) {
+            Button(action: action) {
+                HStack(alignment: .top, spacing: 12) {
+                    // Meal image
+                    AsyncImage(url: URL(string: meal.imageUrl)) { phase in
+                        if let image = phase.image {
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 56, height: 56)
+                                .cornerRadius(10)
+                                .clipped()
+                        } else if phase.error != nil {
+                            Color.gray.frame(width: 56, height: 56).cornerRadius(10)
+                        } else {
+                            ProgressView().frame(width: 56, height: 56)
+                        }
                     }
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    // Header
-                    Text(dayNames[dayOfWeek - 1])
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Header
+                        Text(dayNames[dayOfWeek - 1])
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                        
+                        Text(meal.name)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(2)
+                        
+                        // Category/Area
+                        HStack(spacing: 8) {
+                            if let category = meal.category, !category.isEmpty {
+                                Text(category)
+                                    .font(.caption2)
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
+                            if let area = meal.area, !area.isEmpty {
+                                Text(area)
+                                    .font(.caption2)
+                                    .foregroundColor(.green)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
+                        }
+                    }
+                    Spacer()
+                    // Arrow indicator
+                    Image(systemName: "chevron.right")
                         .font(.caption)
-                        .fontWeight(.medium)
                         .foregroundColor(.secondary)
-                    
-                    Text(meal.name)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2)
-                    
-                    // Category/Area
-                    HStack(spacing: 8) {
-                        if let category = meal.category, !category.isEmpty {
-                            Text(category)
-                                .font(.caption2)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(6)
-                        }
-                        if let area = meal.area, !area.isEmpty {
-                            Text(area)
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.green.opacity(0.1))
-                                .cornerRadius(6)
-                        }
-                    }
                 }
-                Spacer()
-                // Arrow indicator
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                .padding(16)
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
             }
-            .padding(16)
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .buttonStyle(PlainButtonStyle())
+            Button(action: toggleFavorite) {
+                Image(systemName: isFavorite ? "star.fill" : "star")
+                    .resizable()
+                    .frame(width: 22, height: 22)
+                    .foregroundColor(isFavorite ? .yellow : .gray)
+                    .padding(8)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -333,29 +351,63 @@ struct MealDetailView_MealDB: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
 
-                // TikTok Search Button
-                Button(action: {
-                    let query = meal.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-                    let tiktokURL = URL(string: "tiktok://search?q=\(query)")!
-                    let safariURL = URL(string: "https://www.tiktok.com/search?q=\(query)")!
-                    if UIApplication.shared.canOpenURL(tiktokURL) {
-                        UIApplication.shared.open(tiktokURL)
-                    } else {
-                        UIApplication.shared.open(safariURL)
+                // TikTok and Instagram Search Buttons
+                VStack(alignment: .leading, spacing: 8) {
+                    // TikTok Search Button
+                    Button(action: {
+                        let query = meal.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                        let tiktokURL = URL(string: "tiktok://search?q=\(query)")!
+                        let safariURL = URL(string: "https://www.tiktok.com/search?q=\(query)")!
+                        if UIApplication.shared.canOpenURL(tiktokURL) {
+                            UIApplication.shared.open(tiktokURL)
+                        } else {
+                            UIApplication.shared.open(safariURL)
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Image("tiktok_logo")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                            Text("Search on TikTok")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 10)
+                        .background(Color.black)
+                        .cornerRadius(20)
                     }
-                }) {
-                    HStack(spacing: 8) {
-                        Image("tiktok_logo")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                        Text("Search on TikTok")
-                            .font(.system(size: 15, weight: .semibold))
+
+                    // Instagram Search Button
+                    Button(action: {
+                        let query = meal.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                        let instagramURL = URL(string: "instagram://tag?name=\(query)")!
+                        let safariURL = URL(string: "https://www.instagram.com/explore/tags/\(query)/")!
+                        if UIApplication.shared.canOpenURL(instagramURL) {
+                            UIApplication.shared.open(instagramURL)
+                        } else {
+                            UIApplication.shared.open(safariURL)
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Image("insta_logo")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                            Text("Search on Instagram")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 10)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color(red: 0.99, green: 0.84, blue: 0.36), Color(red: 0.99, green: 0.49, blue: 0.42), Color(red: 0.89, green: 0.27, blue: 0.67), Color(red: 0.42, green: 0.23, blue: 0.85)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(20)
                     }
-                    .foregroundColor(.white)
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 10)
-                    .background(Color.black)
-                    .cornerRadius(20)
                 }
                 .padding(.horizontal, 20)
 
