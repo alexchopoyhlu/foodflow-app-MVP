@@ -1,12 +1,37 @@
 import SwiftUI
+import UIKit
 
 struct MealPlanView: View {
     @ObservedObject private var generator = MealPlanGenerator.shared
     @State private var selectedMeal: MealDBMeal?
     @State private var showingMealDetail = false
     @State private var isLoading = false
+    @State private var selectedView: ViewType = .list
+    @State private var selectedDate: Date? = Calendar.current.startOfDay(for: Date())
+    var calendarToMealSpacing: CGFloat = 16
+    
+    enum ViewType: String, CaseIterable, Identifiable {
+        case list = "List"
+        case calendar = "Calendar"
+        var id: String { rawValue }
+    }
     
     private let dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    
+    // Helper: Map meals to their date (assuming 1 meal per day, Mon-Sun of current week)
+    private var mealsByDate: [Date: [MealDBMeal]] {
+        guard !generator.weeklyMeals.isEmpty else { return [:] }
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        var dict: [Date: [MealDBMeal]] = [:]
+        for (i, meal) in generator.weeklyMeals.prefix(7).enumerated() {
+            if let date = calendar.date(byAdding: .day, value: i, to: weekStart) {
+                dict[calendar.startOfDay(for: date), default: []].append(meal)
+            }
+        }
+        return dict
+    }
     
     var body: some View {
         NavigationStack {
@@ -32,54 +57,68 @@ struct MealPlanView: View {
                         .padding(.top, 20)
                         .padding(.horizontal, 20)
                         
+                        // Segmented Control
+                        Picker("View Type", selection: $selectedView) {
+                            ForEach(ViewType.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 4)
+                        
                         // Meal Plan Grid
-                        if generator.isLoading {
-                            ProgressView("Loading meals...")
-                                .padding(.top, 40)
-                        } else if !generator.weeklyMeals.isEmpty {
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
-                                ForEach(Array(generator.weeklyMeals.enumerated()), id: \.element.id) { index, meal in
-                                    MealCard(meal: meal, dayOfWeek: index + 1) {
+                        if selectedView == .list {
+                            if generator.isLoading {
+                                ProgressView("Loading meals...")
+                                    .padding(.top, 40)
+                            } else if !generator.weeklyMeals.isEmpty {
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
+                                    ForEach(Array(generator.weeklyMeals.enumerated()), id: \.element.id) { index, meal in
+                                        MealCard(meal: meal, dayOfWeek: index + 1) {
+                                            selectedMeal = meal
+                                            showingMealDetail = true
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                            } else {
+                                VStack(spacing: 16) {
+                                    Image(systemName: "fork.knife")
+                                        .font(.system(size: 60))
+                                        .foregroundColor(.secondary)
+                                    
+                                    Text("No meal plan generated yet")
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                    
+                                    Text("Tap below to generate your weekly meal plan")
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.top, 60)
+                            }
+                        } else if selectedView == .calendar {
+                            Spacer().frame(height: 65)
+                            CalendarWrapper(selectedDate: $selectedDate, mealDates: Array(mealsByDate.keys))
+                                .frame(height: 270)
+                            Spacer().frame(height: 50)
+                            // Show meal(s) for selected date
+                            if let selectedDate = selectedDate,
+                               let meals = mealsByDate[Calendar.current.startOfDay(for: selectedDate)], !meals.isEmpty {
+                                ForEach(meals, id: \.id) { meal in
+                                    MealCard(meal: meal, dayOfWeek: Calendar.current.component(.weekday, from: selectedDate)) {
                                         selectedMeal = meal
                                         showingMealDetail = true
                                     }
                                 }
-                            }
-                            .padding(.horizontal, 20)
-                        } else {
-                            VStack(spacing: 16) {
-                                Image(systemName: "fork.knife")
-                                    .font(.system(size: 60))
+                            } else {
+                                Text("No meal planned for this day.")
                                     .foregroundColor(.secondary)
-                                
-                                Text("No meal plan generated yet")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                
-                                Text("Tap below to generate your weekly meal plan")
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
+                                    .padding(.top, 24)
                             }
-                            .padding(.top, 60)
                         }
-                        
-                        // Regenerate Button
-                        Button(action: {
-                            generator.generateWeeklyMealPlan { _ in }
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Generate New Meal Plan")
-                            }
-                            .font(.headline)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                        .padding(.bottom, 30)
                     }
                 }
                 
@@ -92,17 +131,15 @@ struct MealPlanView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .navigationDestination(isPresented: $showingMealDetail) {
-                if let meal = selectedMeal {
-                    MealDetailView_MealDB(meal: meal)
-                }
-            }
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
             .onAppear {
                 if generator.weeklyMeals.isEmpty {
                     generator.generateWeeklyMealPlan { _ in }
                 }
+            }
+            .sheet(item: $selectedMeal) { meal in
+                MealDetailView_MealDB(meal: meal)
             }
         }
     }
@@ -311,6 +348,59 @@ struct MealDetailView_MealDB: View {
                     dismiss()
                 }
             }
+        }
+    }
+}
+
+// MARK: - UIKit Calendar Wrapper
+struct CalendarWrapper: UIViewRepresentable {
+    @Binding var selectedDate: Date?
+    var mealDates: [Date]
+
+    func makeUIView(context: Context) -> UICalendarView {
+        let calendarView = UICalendarView()
+        calendarView.delegate = context.coordinator
+        calendarView.selectionBehavior = UICalendarSelectionSingleDate(delegate: context.coordinator)
+        calendarView.calendar = Calendar.current
+        calendarView.fontDesign = .rounded
+        return calendarView
+    }
+
+    func updateUIView(_ uiView: UICalendarView, context: Context) {
+        // Update selection
+        if let selectedDate = selectedDate {
+            let comps = Calendar.current.dateComponents([.year, .month, .day], from: selectedDate)
+            (uiView.selectionBehavior as? UICalendarSelectionSingleDate)?.setSelected(comps, animated: true)
+        }
+        uiView.reloadDecorations(forDateComponents: mealDates.map { Calendar.current.dateComponents([.year, .month, .day], from: $0) }, animated: true)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
+        var parent: CalendarWrapper
+
+        init(_ parent: CalendarWrapper) {
+            self.parent = parent
+        }
+
+        func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
+            if let date = dateComponents?.date {
+                parent.selectedDate = date
+            }
+        }
+
+        func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
+            // Show a dot if this date is in mealDates
+            if let date = dateComponents.date {
+                let day = Calendar.current.startOfDay(for: date)
+                if parent.mealDates.contains(where: { Calendar.current.isDate($0, inSameDayAs: day) }) {
+                    return .default(color: .systemBlue, size: .small)
+                }
+            }
+            return nil
         }
     }
 }
