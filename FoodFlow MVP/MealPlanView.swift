@@ -5,10 +5,12 @@ struct MealPlanView: View {
     @ObservedObject private var generator = MealPlanGenerator.shared
     @State private var selectedMeal: MealDBMeal?
     @State private var showingMealDetail = false
+    @Binding var showingProfile: Bool
     @State private var isLoading = false
     @State private var selectedView: ViewType = .list
     @State private var selectedDate: Date? = Calendar.current.startOfDay(for: Date())
     var calendarToMealSpacing: CGFloat = 16
+    var profileTopSpacing: CGFloat = 20
     
     enum ViewType: String, CaseIterable, Identifiable {
         case list = "List"
@@ -53,8 +55,15 @@ struct MealPlanView: View {
                                     .padding(.top, 4)
                             }
                             Spacer()
+                            // Profile Icon
+                            Button(action: { showingProfile = true }) {
+                                Image(systemName: "person.crop.circle")
+                                    .resizable()
+                                    .frame(width: 36, height: 36)
+                                    .clipShape(Circle())
+                            }
                         }
-                        .padding(.top, 20)
+                        .padding(.top, profileTopSpacing)
                         .padding(.horizontal, 20)
                         
                         // Segmented Control
@@ -406,5 +415,5 @@ struct CalendarWrapper: UIViewRepresentable {
 }
 
 #Preview {
-    MealPlanView()
-} 
+    MealPlanView(showingProfile: .constant(false))
+}

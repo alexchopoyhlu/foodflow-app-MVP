@@ -2,7 +2,9 @@ import SwiftUI
 
 struct GroceryListView: View {
     @ObservedObject private var generator = MealPlanGenerator.shared
+    @Binding var showingProfile: Bool
     @State private var checkedItems: Set<String> = []
+    var profileTopSpacing: CGFloat = 20
     
     // Ingredient categories
     enum Category: String, CaseIterable, Identifiable {
@@ -49,33 +51,52 @@ struct GroceryListView: View {
     
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(Category.allCases) { category in
-                    if let items = categorizedIngredients[category], !items.isEmpty {
-                        Section(header: Text(category.rawValue)) {
-                            ForEach(items, id: \.self) { ingredient in
-                                HStack {
-                                    Image(systemName: checkedItems.contains(ingredient) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(checkedItems.contains(ingredient) ? .green : .gray)
-                                        .onTapGesture {
-                                            toggle(ingredient)
-                                        }
-                                    Text(ingredient)
-                                        .strikethrough(checkedItems.contains(ingredient))
-                                        .foregroundColor(checkedItems.contains(ingredient) ? .secondary : .primary)
-                                        .animation(.easeInOut, value: checkedItems)
-                                }
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    toggle(ingredient)
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("Grocery List")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    Spacer()
+                    Button(action: { showingProfile = true }) {
+                        Image(systemName: "person.crop.circle")
+                            .resizable()
+                            .frame(width: 36, height: 36)
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.top, profileTopSpacing)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+                .background(Color(.systemGroupedBackground))
+                .cornerRadius(0)
+                List {
+                    ForEach(Category.allCases) { category in
+                        if let items = categorizedIngredients[category], !items.isEmpty {
+                            Section(header: Text(category.rawValue)) {
+                                ForEach(items, id: \.self) { ingredient in
+                                    HStack {
+                                        Image(systemName: checkedItems.contains(ingredient) ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(checkedItems.contains(ingredient) ? .green : .gray)
+                                            .onTapGesture {
+                                                toggle(ingredient)
+                                            }
+                                        Text(ingredient)
+                                            .strikethrough(checkedItems.contains(ingredient))
+                                            .foregroundColor(checkedItems.contains(ingredient) ? .secondary : .primary)
+                                            .animation(.easeInOut, value: checkedItems)
+                                    }
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        toggle(ingredient)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .listStyle(.insetGrouped)
             }
-            .navigationTitle("Grocery List")
-            .navigationBarTitleDisplayMode(.large)
         }
     }
     
@@ -89,5 +110,5 @@ struct GroceryListView: View {
 }
 
 #Preview {
-    GroceryListView()
-} 
+    GroceryListView(showingProfile: .constant(false))
+}
