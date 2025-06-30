@@ -75,58 +75,66 @@ struct MealPlanView: View {
                         .pickerStyle(.segmented)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 4)
-                        
-                        // Meal Plan Grid
-                        if selectedView == .list {
-                            if generator.isLoading {
-                                ProgressView("Loading meals...")
-                                    .padding(.top, 40)
-                            } else if !generator.weeklyMeals.isEmpty {
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
-                                    ForEach(Array(generator.weeklyMeals.enumerated()), id: \.element.id) { index, meal in
-                                        MealCard(meal: meal, dayOfWeek: index + 1) {
-                                            selectedMeal = meal
-                                            showingMealDetail = true
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                VStack(spacing: 16) {
-                                    Image(systemName: "fork.knife")
-                                        .font(.system(size: 60))
-                                        .foregroundColor(.secondary)
-                                    
-                                    Text("No meal plan generated yet")
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                    
-                                    Text("Tap below to generate your weekly meal plan")
-                                        .font(.body)
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .padding(.top, 60)
-                            }
-                        } else if selectedView == .calendar {
-                            Spacer().frame(height: 65)
-                            CalendarWrapper(selectedDate: $selectedDate, mealDates: Array(mealsByDate.keys))
-                                .frame(height: 270)
-                            Spacer().frame(height: 50)
-                            // Show meal(s) for selected date
-                            if let selectedDate = selectedDate,
-                               let meals = mealsByDate[Calendar.current.startOfDay(for: selectedDate)], !meals.isEmpty {
-                                ForEach(meals, id: \.id) { meal in
-                                    MealCard(meal: meal, dayOfWeek: Calendar.current.component(.weekday, from: selectedDate)) {
+                    }
+                    if selectedView == .list {
+                        if generator.isLoading {
+                            ProgressView("Loading meals...")
+                                .padding(.top, 40)
+                        } else if !generator.weeklyMeals.isEmpty {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 16) {
+                                ForEach(Array(generator.weeklyMeals.enumerated()), id: \.element.id) { index, meal in
+                                    MealCard(meal: meal, dayOfWeek: index + 1) {
                                         selectedMeal = meal
                                         showingMealDetail = true
                                     }
                                 }
-                            } else {
-                                Text("No meal planned for this day.")
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 24)
                             }
+                            .padding(.horizontal, 20)
+                        } else {
+                            VStack(spacing: 16) {
+                                Image(systemName: "fork.knife")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("No meal plan generated yet")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("Tap below to generate your weekly meal plan")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.top, 60)
+                        }
+                    } else if selectedView == .calendar {
+                        Spacer().frame(height: 65)
+                        // Add spacing between segmented control and calendar
+                        Spacer().frame(height: 55)
+                        CalendarWrapper(selectedDate: $selectedDate, mealDates: Array(mealsByDate.keys))
+                            .frame(height: 270)
+                        Spacer().frame(height: 90)
+                        VStack(spacing: 8) {
+                            Image(systemName: "lightbulb")
+                                .font(.system(size: 28))
+                                .foregroundColor(.secondary)
+                            Text("Tap on dates with a dot to see")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Text("the meal for that day.")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        // Show meal(s) for selected date
+                        if let selectedDate = selectedDate,
+                           let meals = mealsByDate[Calendar.current.startOfDay(for: selectedDate)], !meals.isEmpty {
+                            // Sheet will be shown for selectedMeal
+                        } else {
+                            Text("No meal planned for this day.")
+                                .foregroundColor(.secondary)
+                                .padding(.top, 24)
                         }
                     }
                 }
@@ -145,6 +153,26 @@ struct MealPlanView: View {
             .onAppear {
                 if generator.weeklyMeals.isEmpty {
                     generator.generateWeeklyMealPlan { _ in }
+                }
+                // Automatically select today when switching to calendar view
+                if selectedView == .calendar {
+                    let today = Calendar.current.startOfDay(for: Date())
+                    selectedDate = today
+                    if let meals = mealsByDate[today], let firstMeal = meals.first {
+                        selectedMeal = firstMeal
+                    } else {
+                        selectedMeal = nil
+                    }
+                }
+            }
+            .onChange(of: selectedDate) { newDate in
+                if selectedView == .calendar, let newDate = newDate {
+                    let day = Calendar.current.startOfDay(for: newDate)
+                    if let meals = mealsByDate[day], let firstMeal = meals.first {
+                        selectedMeal = firstMeal
+                    } else {
+                        selectedMeal = nil
+                    }
                 }
             }
             .sheet(item: $selectedMeal) { meal in
@@ -304,7 +332,33 @@ struct MealDetailView_MealDB: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                
+
+                // TikTok Search Button
+                Button(action: {
+                    let query = meal.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                    let tiktokURL = URL(string: "tiktok://search?q=\(query)")!
+                    let safariURL = URL(string: "https://www.tiktok.com/search?q=\(query)")!
+                    if UIApplication.shared.canOpenURL(tiktokURL) {
+                        UIApplication.shared.open(tiktokURL)
+                    } else {
+                        UIApplication.shared.open(safariURL)
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image("tiktok_logo")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                        Text("Search on TikTok")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.vertical, 2)
+                    .padding(.horizontal, 10)
+                    .background(Color.black)
+                    .cornerRadius(20)
+                }
+                .padding(.horizontal, 20)
+
                 // Ingredients Section
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
