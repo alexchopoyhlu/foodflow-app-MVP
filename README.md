@@ -1,5 +1,9 @@
 # FoodFlow MVP
 
+<img width="1920" height="1080" alt="foodflow-announce" src="https://github.com/user-attachments/assets/fc8fdeb1-326a-4048-aa34-6e8769aada62" />
+
+
+
 A simple, personalized AI-generated weekly meal-planning iOS app built with SwiftUI.
 
 ## 🎯 Goal
